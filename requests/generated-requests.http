@@ -1,0 +1,48 @@
+
+### Проверка, что приложение запущено
+GET http://localhost:8080/ping
+
+
+### Получить весь каталог товаров
+GET http://localhost:8080/catalog/list
+
+### Добавить в каталог новый товар
+POST http://localhost:8080/catalog/add
+Content-Type: application/json
+
+[{
+    "barcode": "0001-2010",
+    "brand": "apple",
+    "name": "iphone-10",
+    "cost": 100
+},{
+    "barcode": "0001-2011",
+    "brand": "apple",
+    "name": "iphone-10",
+    "cost": 100
+}
+]
+
+
+
+### получить баланс всех товаров
+GET http://localhost:8080/balance/list
+
+### Внести товар на склад
+POST http://localhost:8080/balance/change
+Content-Type: application/json
+
+[{
+  "barcode": "0001-2010",
+  "delta": 10
+},{
+  "barcode": "0001-2011",
+  "delta": -5
+}
+]
+
+
+
+
+### получить все чеки
+GET http://localhost:8080/receipt/list

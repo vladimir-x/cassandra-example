@@ -1,0 +1,44 @@
+drop KEYSPACE if exists mobishop;
+
+CREATE KEYSPACE IF NOT EXISTS mobishop
+    WITH REPLICATION = {
+        'class' : 'SimpleStrategy',
+        'replication_factor' : 1
+        };
+
+
+-- Таблица с содержимым склада
+drop table IF EXISTS mobishop.catalog;
+CREATE TABLE IF NOT EXISTS mobishop.catalog
+(
+    barcode text,
+    brand   text,
+    name    text,
+    cost    bigint,
+    PRIMARY KEY (barcode)
+);
+
+-- Таблица с ведением остатков
+drop table IF EXISTS mobishop.balance;
+CREATE TABLE IF NOT EXISTS mobishop.balance
+(
+    barcode text,
+    amount  bigint,
+    version bigint,
+    PRIMARY KEY (barcode)
+);
+
+
+-- Таблица с продажами
+drop table IF EXISTS mobishop.receipt;
+CREATE TABLE IF NOT EXISTS mobishop.receipt
+(
+    shop_id     bigint,
+    day         date,
+    sale_date   timestamp,
+
+    totalAmount bigint,
+    seller      text,
+    lines       frozen<list<text>>,
+    PRIMARY KEY ((shop_id, day), sale_date)
+);

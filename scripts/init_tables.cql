@@ -1,11 +1,3 @@
-drop KEYSPACE if exists mobishop;
-
-CREATE KEYSPACE IF NOT EXISTS mobishop
-    WITH REPLICATION = {
-        'class' : 'SimpleStrategy',
-        'replication_factor' : 1
-        };
-
 
 -- Таблица с содержимым склада
 drop table IF EXISTS mobishop.catalog;

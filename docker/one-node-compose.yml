@@ -1,0 +1,30 @@
+networks:
+  cassandra-one:  # docker network where all cassandra nodes will be put in
+services:
+  cass1:
+    image: cassandra:4.1.11   # better to use a specific version, if you want to control upgrades
+    container_name: cass-one
+    hostname: cass1
+    healthcheck:
+        test: ["CMD", "cqlsh", "-e", "describe keyspaces" ]
+        interval: 5s
+        timeout: 5s
+        retries: 60
+    networks:
+      - cassandra-one
+    ports:
+      - "9042:9042"  # Expose native binary CQL port for your apps
+      - "7199:7199"  # JMX
+    volumes:
+      - ./data/one-node:/var/lib/cassandra
+      - ./conf:/etc/cassandra
+      
+    environment: &environment    # Declare and save environments variables into "environment"
+        CASSANDRA_SEEDS: "cass1"    # The first two nodes will be seeds
+        CASSANDRA_CLUSTER_NAME: ONE_CLUST
+        CASSANDRA_ENDPOINT_SNITCH: SimpleSnitch
+        JVM_OPTS: "-Xms128M -Xmx128M -XX:+UseG1GC"
+    deploy:
+      resources:
+        limits:
+          memory: 600M

@@ -1,0 +1,212 @@
+
+networks:
+  cassandra: # docker network where all cassandra nodes will be put in
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.21.0.0/16
+         gateway: 172.21.0.1          
+  
+services:
+  cass-left-A:
+    image: cassandra:4.1.11   # better to use a specific version, if you want to control upgrades
+    container_name: cass-left-A
+    hostname: cass-left-A
+    healthcheck:
+      test: nodetool status | grep -e 'UN.*172.21.0.11.*A'
+      interval: 5s
+      timeout: 5s
+      retries: 300
+    networks:
+      cassandra:
+        ipv4_address: 172.21.0.11
+    ports:
+      - "9041:9042"  # Expose native binary CQL port for your apps
+      - "7191:7199"  # JMX
+      - "7001:7000"
+    volumes:
+      - ./data/six-node-A:/var/lib/cassandra    # This is the volume that will persist data for cass1 node
+      - ./conf:/etc/cassandra   # Use your own config files for full control
+    environment: &environment    # Declare and save environments variables into "environment"
+        CASSANDRA_SEEDS: "cass-left-A:7000,cass-right-D:7000"    # The first two nodes will be seeds
+        CASSANDRA_CLUSTER_NAME: SIX_CLUST
+        CASSANDRA_DC: Left
+        CASSANDRA_RACK: A
+        CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+        JVM_OPTS: "-Xms128M -Xmx128M -XX:+UseG1GC"
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+      
+      
+  cass-left-B:
+    image: cassandra:4.1.11   # better to use a specific version, if you want to control upgrades
+    container_name: cass-left-B
+    hostname: cass-left-B
+    healthcheck:
+      test: nodetool status | grep -e 'UN.*172.21.0.12.*B'
+      interval: 5s
+      timeout: 5s
+      retries: 300
+    networks:
+      cassandra:
+        ipv4_address: 172.21.0.12
+    ports:
+      - "9042:9042"  # Expose native binary CQL port for your apps
+      - "7192:7199"  # JMX
+      - "7002:7000"
+    volumes:
+      - ./data/six-node-B:/var/lib/cassandra    # This is the volume that will persist data for cass1 node
+      - ./conf:/etc/cassandra   # Use your own config files for full control
+    environment: &environment    # Declare and save environments variables into "environment"
+        CASSANDRA_SEEDS: "cass-left-A:7000,cass-right-D:7000"    # The first two nodes will be seeds
+        CASSANDRA_CLUSTER_NAME: SIX_CLUST
+        CASSANDRA_DC: Left
+        CASSANDRA_RACK: B
+        CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+        JVM_OPTS: "-Xms128M -Xmx128M -XX:+UseG1GC"
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+    depends_on:
+      cass-left-A:
+        condition: service_healthy
+        
+  cass-left-C:
+    image: cassandra:4.1.11   # better to use a specific version, if you want to control upgrades
+    container_name: cass-left-C
+    hostname: cass-left-C
+    healthcheck:
+      test: nodetool status | grep -e 'UN.*172.21.0.13.*C'
+      interval: 5s
+      timeout: 5s
+      retries: 300
+    networks:
+      cassandra:
+        ipv4_address: 172.21.0.13
+    ports:
+      - "9043:9042"  # Expose native binary CQL port for your apps
+      - "7193:7199"  # JMX
+      - "7003:7000"
+    volumes:
+      - ./data/six-node-C:/var/lib/cassandra    # This is the volume that will persist data for cass1 node
+      - ./conf:/etc/cassandra   # Use your own config files for full control
+    environment: &environment    # Declare and save environments variables into "environment"
+        CASSANDRA_SEEDS: "cass-left-A:7000,cass-right-D:7000"    # The first two nodes will be seeds
+        CASSANDRA_CLUSTER_NAME: SIX_CLUST
+        CASSANDRA_DC: Left
+        CASSANDRA_RACK: C
+        CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+        JVM_OPTS: "-Xms128M -Xmx128M -XX:+UseG1GC"
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+    depends_on:
+      cass-left-B:
+        condition: service_healthy      
+
+  cass-right-D:
+    image: cassandra:4.1.11   # better to use a specific version, if you want to control upgrades
+    container_name: cass-right-D
+    hostname: cass-right-D
+    healthcheck:
+      test: nodetool status | grep -e 'UN.*172.21.0.14.*D'
+      interval: 5s
+      timeout: 5s
+      retries: 300
+    networks:
+      cassandra:
+        ipv4_address: 172.21.0.14
+    ports:
+      - "9044:9042"  # Expose native binary CQL port for your apps
+      - "7194:7199"  # JMX
+      - "7004:7000"
+    volumes:
+      - ./data/six-node-D:/var/lib/cassandra    # This is the volume that will persist data for cass1 node
+      - ./conf:/etc/cassandra   # Use your own config files for full control
+    environment: &environment    # Declare and save environments variables into "environment"
+        CASSANDRA_SEEDS: "cass-left-A:7000,cass-right-D:7000"    # The first two nodes will be seeds
+        CASSANDRA_CLUSTER_NAME: SIX_CLUST
+        CASSANDRA_DC: Right
+        CASSANDRA_RACK: D
+        CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+        JVM_OPTS: "-Xms128M -Xmx128M -XX:+UseG1GC"
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+    depends_on:
+      cass-left-C:
+        condition: service_healthy     
+        
+  cass-right-E:
+    image: cassandra:4.1.11   # better to use a specific version, if you want to control upgrades
+    container_name: cass-right-E
+    hostname: cass-right-E
+    healthcheck:
+      test: nodetool status | grep -e 'UN.*172.21.0.15.*E'
+      interval: 5s
+      timeout: 5s
+      retries: 300
+    networks:
+      cassandra:
+        ipv4_address: 172.21.0.15
+    ports:
+      - "9045:9042"  # Expose native binary CQL port for your apps
+      - "7195:7199"  # JMX
+      - "7005:7000"
+    volumes:
+      - ./data/six-node-E:/var/lib/cassandra    # This is the volume that will persist data for cass1 node
+      - ./conf:/etc/cassandra   # Use your own config files for full control
+    environment: &environment    # Declare and save environments variables into "environment"
+        CASSANDRA_SEEDS: "cass-left-A:7000,cass-right-D:7000"    # The first two nodes will be seeds
+        CASSANDRA_CLUSTER_NAME: SIX_CLUST
+        CASSANDRA_DC: Right
+        CASSANDRA_RACK: E
+        CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+        JVM_OPTS: "-Xms128M -Xmx128M -XX:+UseG1GC"
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+    depends_on:
+      cass-right-D:
+        condition: service_healthy 
+        
+  cass-right-F:
+    image: cassandra:4.1.11   # better to use a specific version, if you want to control upgrades
+    container_name: cass-right-F
+    hostname: cass-right-F
+    healthcheck:
+      test: nodetool status | grep -e 'UN.*172.21.0.16.*F'
+      interval: 5s
+      timeout: 5s
+      retries: 300
+    networks:
+      cassandra:
+        ipv4_address: 172.21.0.16
+    ports:
+      - "9046:9042"  # Expose native binary CQL port for your apps
+      - "7196:7199"  # JMX
+      - "7006:7000"
+    volumes:
+      - ./data/six-node-F:/var/lib/cassandra    # This is the volume that will persist data for cass1 node
+      - ./conf:/etc/cassandra   # Use your own config files for full control
+    environment: &environment    # Declare and save environments variables into "environment"
+        CASSANDRA_SEEDS: "cass-left-A:7000,cass-right-D:7000"    # The first two nodes will be seeds
+        CASSANDRA_CLUSTER_NAME: SIX_CLUST
+        CASSANDRA_DC: Right
+        CASSANDRA_RACK: F
+        CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+        JVM_OPTS: "-Xms128M -Xmx128M -XX:+UseG1GC"
+    deploy:
+      resources:
+        limits:
+          memory: 600M          
+    depends_on:
+      cass-right-E:
+        condition: service_healthy         
+          

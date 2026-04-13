@@ -32,17 +32,51 @@ GET http://localhost:8080/balance/list
 POST http://localhost:8080/balance/change
 Content-Type: application/json
 
-[{
+{
   "barcode": "0001-2010",
-  "delta": 10
-},{
-  "barcode": "0001-2011",
   "delta": -5
 }
-]
-
 
 
 
 ### получить все чеки
 GET http://localhost:8080/receipt/list
+
+### получить все чеки на указанный магазин и день, после указанно времени
+GET http://localhost:8080/receipt/list/711/2025-01-01?after=10:11:00&limit=999
+
+
+### Внести чеки
+POST http://localhost:8080/receipt/add
+Content-Type: application/json
+
+[{
+  "shop_id": 711,
+  "day": "2025-01-01",
+  "sale_date": "2025-01-01 10:05:00",
+  "receipt_id": "s711-r100",
+  "totalAmount": 1000,
+  "seller": "Ivan Ivanov",
+  "barcodes": [
+    "0001-2010",
+    "0001-2011",
+    "0001-2012"
+  ]
+},{
+  "shop_id": 711,
+  "day": "2025-01-01",
+  "sale_date": "2025-01-01 10:10:00",
+  "receipt_id": "s711-r101",
+  "totalAmount": 500,
+  "seller": "Ivan Ivanov",
+  "barcodes": ["0001-2012"]
+},{
+  "shop_id": 711,
+  "day": "2025-01-01",
+  "sale_date": "2025-01-01 10:15:00",
+  "receipt_id": "s711-r102",
+  "totalAmount": 500,
+  "seller": "Ivan Ivanov",
+  "barcodes": ["0001-2012"]
+}
+]

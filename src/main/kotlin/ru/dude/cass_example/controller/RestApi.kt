@@ -1,18 +1,14 @@
 package ru.dude.cass_example.controller
 
-import com.datastax.oss.driver.api.core.ConsistencyLevel
 import org.springframework.data.cassandra.core.CassandraTemplate
-import org.springframework.data.cassandra.core.UpdateOptions
 import org.springframework.data.cassandra.core.cql.CqlTemplate
-import org.springframework.data.cassandra.core.cql.WriteOptions
-import org.springframework.data.cassandra.core.query.Query
-import org.springframework.data.cassandra.core.query.Update
-import org.springframework.data.cassandra.core.query.isEqualTo
-import org.springframework.data.cassandra.core.query.where
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import ru.dude.cass_example.entity.Balance
 import ru.dude.cass_example.entity.Catalog
@@ -20,6 +16,9 @@ import ru.dude.cass_example.entity.Receipt
 import ru.dude.cass_example.repository.BalanceRepository
 import ru.dude.cass_example.repository.CatalogRepository
 import ru.dude.cass_example.repository.ReceiptRepository
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 
 /**
@@ -35,6 +34,12 @@ internal class RestApi(
     val cassTemplate: CassandraTemplate,
     val cqlTemplate: CqlTemplate
 ) {
+
+    companion object {
+        val dayFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+    }
 
 
     @GetMapping("/ping")
@@ -56,26 +61,55 @@ internal class RestApi(
     fun balanceList() = balanceRepository.findAll()
 
     @PostMapping("/balance/change", consumes = ["application/json"])
-    fun balanceChange(@RequestBody changeItems: List<ChangeDto>) {
+    fun balanceChange(@RequestBody changeItem: ChangeDto) {
 
-        changeItems.forEach {
-            val balance = balanceRepository.findByIdOrNull(it.barcode) ?: throw Exception("Balance [${it.barcode}] not found")
+        // получить существующий баланс
+        val balance = getBalanceOrCreateIfNeed(changeItem.barcode)
 
-            val newBalanceAmount = balance.amount + it.delta
-            val newVersion = balance.version + 1
-            val oldVersion = balance.version
+        val newBalanceAmount = balance.amount + changeItem.delta
+        val newVersion = balance.version + 1
+        val oldVersion = balance.version
 
-            val lwtCql = "UPDATE balance SET amount= :amount, version = :newVersion WHERE barcode = :barcode IF version = :oldVersion"
+        // обновить баланс
+        balanceRepository.updateAmount(balance.barcode, newBalanceAmount, oldVersion, newVersion)
 
-            throw Exception("Not supported Yet")
 
+    }
+
+    private fun getBalanceOrCreateIfNeed(barcode: String): Balance {
+
+        val existed = balanceRepository.findByIdOrNull(barcode)
+        if (existed != null) {
+            return existed
         }
 
+        balanceRepository.createRecord(barcode)
+
+        return balanceRepository.findByIdOrNull(barcode) ?: throw Exception("Balance [$barcode] can't create")
     }
 
 
     @GetMapping("/receipt/list")
-    fun receiptList() = receiptRepository.findAll()
+    fun receiptListAll() = receiptRepository.findAll()
+
+
+    @GetMapping("/receipt/list/{shopId}/{day}")
+    fun receiptListPart(
+        @PathVariable shopId: String?,
+        @PathVariable day: String?,
+        @RequestParam("after") after: String,
+        @RequestParam("limit") limit: Int
+    ): List<Receipt> {
+
+        val saleDateAfter = LocalDateTime.parse("$day $after", dateTimeFormatter)
+
+        return receiptRepository.findByShopAndDayAndSaleDateAfter(
+            shopId!!.toLong(),
+            LocalDate.parse(day!!, dayFormatter),
+            saleDateAfter,
+            limit
+        )
+    }
 
     @PostMapping("/receipt/add", consumes = ["application/json"])
     fun receiptAdd(@RequestBody receiptItems: List<Receipt>) {

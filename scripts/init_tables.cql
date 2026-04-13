@@ -1,4 +1,3 @@
-
 -- Таблица с содержимым склада
 drop table IF EXISTS mobishop.catalog;
 CREATE TABLE IF NOT EXISTS mobishop.catalog
@@ -28,9 +27,10 @@ CREATE TABLE IF NOT EXISTS mobishop.receipt
     shop_id     bigint,
     day         date,
     sale_date   timestamp,
+    receipt_id  text,
 
     totalAmount bigint,
     seller      text,
-    lines       frozen<list<text>>,
-    PRIMARY KEY ((shop_id, day), sale_date)
+    barcodes    frozen<list<text>>,
+    PRIMARY KEY ((shop_id, day), sale_date, receipt_id)
 );

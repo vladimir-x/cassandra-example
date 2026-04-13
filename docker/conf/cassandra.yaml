@@ -8,7 +8,7 @@
 
 # The name of the cluster. This is mainly used to prevent machines in
 # one logical cluster from joining another.
-cluster_name: ONE_CLUST
+cluster_name: SIX_CLUST
 
 # This defines the number of tokens randomly assigned to this node on the ring
 # The more tokens, relative to other nodes, the larger the proportion of data
@@ -464,7 +464,7 @@ seed_provider:
       parameters:
           # seeds is actually a comma-delimited list of addresses.
           # Ex: "<ip1>,<ip2>,<ip3>"
-          - seeds: "172.19.0.2"
+          - seeds: "cass-left-A:7000,cass-right-D:7000"
 
 # For workloads with more data than can fit in memory, Cassandra's
 # bottleneck will be reads that need to fetch data from
@@ -678,7 +678,7 @@ listen_interface: eth0
 
 # Address to broadcast to other Cassandra nodes
 # Leaving this blank will set it to the same value as listen_address
-broadcast_address: 172.19.0.2
+broadcast_address: 172.21.0.16
 
 # When using multiple physical network interfaces, set this
 # to true to listen on broadcast_address in addition to
@@ -1071,7 +1071,7 @@ slow_query_log_timeout_in_ms: 500
 #
 # You can use a custom Snitch by setting this to the full class name
 # of the snitch, which will be assumed to be on your classpath.
-endpoint_snitch: SimpleSnitch
+endpoint_snitch: GossipingPropertyFileSnitch
 
 # controls how often to perform the more expensive part of host score
 # calculation

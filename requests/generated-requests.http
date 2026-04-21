@@ -6,6 +6,10 @@ GET http://localhost:8080/ping
 ### Получить весь каталог товаров
 GET http://localhost:8080/catalog/list
 
+
+### Получить описание товара из каталога
+GET http://localhost:8080/catalog/get/0001-2011
+
 ### Добавить в каталог новый товар
 POST http://localhost:8080/catalog/add
 Content-Type: application/json
@@ -25,8 +29,12 @@ Content-Type: application/json
 
 
 
+
 ### получить баланс всех товаров
 GET http://localhost:8080/balance/list
+
+### получить баланс одного товара
+GET http://localhost:8080/balance/get/0001-2010
 
 ### Внести товар на склад
 POST http://localhost:8080/balance/change

@@ -1,12 +1,9 @@
 package ru.dude.cass_example.controller
 
-import org.springframework.data.cassandra.core.CassandraTemplate
-import org.springframework.data.cassandra.core.cql.CqlTemplate
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -30,9 +27,6 @@ internal class RestApi(
     val catalogRepository: CatalogRepository,
     val balanceRepository: BalanceRepository,
     val receiptRepository: ReceiptRepository,
-
-    val cassTemplate: CassandraTemplate,
-    val cqlTemplate: CqlTemplate
 ) {
 
     companion object {
@@ -49,31 +43,55 @@ internal class RestApi(
 
 
     @GetMapping("/catalog/list")
-    fun catalogList() = catalogRepository.findAll()
+    fun catalogList() = catalogRepository.findAllCatalog()
+
+    @GetMapping("/catalog/get/{barcode}")
+    fun catalogGet(@PathVariable barcode: String) =  catalogRepository.findByBarcode(barcode)
+
 
     @PostMapping("/catalog/add", consumes = ["application/json"])
     fun catalogAdd(@RequestBody catalogItems: List<Catalog>) {
-        catalogRepository.insert(catalogItems)
+        catalogItems.forEach { catalog ->
+            catalogRepository.insertCatalog(catalog)
+        }
     }
 
 
     @GetMapping("/balance/list")
     fun balanceList() = balanceRepository.findAll()
 
+    @GetMapping("/balance/get/{barcode}")
+    fun balanceGet(@PathVariable barcode: String) =  balanceRepository.findByBarcode(barcode)
+
     @PostMapping("/balance/change", consumes = ["application/json"])
-    fun balanceChange(@RequestBody changeItem: ChangeDto) {
-
-        // получить существующий баланс
-        val balance = getBalanceOrCreateIfNeed(changeItem.barcode)
-
-        val newBalanceAmount = balance.amount + changeItem.delta
-        val newVersion = balance.version + 1
-        val oldVersion = balance.version
-
-        // обновить баланс
-        balanceRepository.updateAmount(balance.barcode, newBalanceAmount, oldVersion, newVersion)
+    fun balanceChange(@RequestBody changeItem: ChangeDto) = updateBalance(changeItem.barcode,changeItem.delta)
 
 
+    private fun updateBalance(barcode: String, delta: Long) {
+
+        // 10 попыток на обновление
+        var retries = 10
+
+
+        while (retries-- > 0) {
+
+            // получить существующий баланс
+            val balance = getBalanceOrCreateIfNeed(barcode)
+
+            val newBalanceAmount = balance.amount + delta
+            val newVersion = balance.version + 1
+            val oldVersion = balance.version
+
+            // обновить баланс
+            val applied = balanceRepository.updateAmount(balance.barcode, newBalanceAmount, oldVersion, newVersion)
+
+            if (applied){
+                //если обновление успешно
+                return
+            }
+        }
+
+        throw Exception("Update balance failed")
     }
 
     private fun getBalanceOrCreateIfNeed(barcode: String): Balance {
@@ -89,8 +107,9 @@ internal class RestApi(
     }
 
 
+
     @GetMapping("/receipt/list")
-    fun receiptListAll() = receiptRepository.findAll()
+    fun receiptListAll() = receiptRepository.findAllReceipts()
 
 
     @GetMapping("/receipt/list/{shopId}/{day}")
@@ -113,52 +132,8 @@ internal class RestApi(
 
     @PostMapping("/receipt/add", consumes = ["application/json"])
     fun receiptAdd(@RequestBody receiptItems: List<Receipt>) {
-        // НЕ контролируется уровень согласованности (используется по умолчанию)
-        receiptRepository.insert(receiptItems)
+        receiptItems.forEach { receipt ->
+            receiptRepository.insertReceipt(receipt)
+        }
     }
 }
-
-
-/**
-
-val applied = cqlTemplate.execute { session ->
-val preparedStatement = session.prepare(lwtCql)
-
-val boundStatement = preparedStatement.bind(newBalanceAmount, newVersion, balance.barcode, balance.version)
-.setConsistencyLevel(ConsistencyLevel.QUORUM)
-.setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
-
-preparedStatement
-}
-
-
-val writeOpts = UpdateOptions.builder()
-.consistencyLevel(ConsistencyLevel.QUORUM)
-.serialConsistencyLevel(ConsistencyLevel.SERIAL)
-.build()
-
-cassTemplate.statementFactory.update(lwtCql, writeOpts).build({
-it.
-})
-
-cassTemplate.query(lwtCql).
-val update = Update.empty()
-.set(Balance::amount.name, newBalanceAmount)
-.set(Balance::version.name, newVersion)
-
-val query = Query.query(where("id").`is`(id))
-.queryOptions(UpdateOptions.builder().ifCondition(where("id").isEqualTo(oldVersion)).build())
-
-
-Query.query(Update().set("barcode", it.barcode))
-
-cassTemplate.up
-
-balanceRepository.
-balance.
-
-
-}
-
-balanceRepository.insert(changeItems)
- */

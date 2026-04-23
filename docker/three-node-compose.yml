@@ -1,112 +1,89 @@
-
-networks: # docker network where all cassandra nodes will be put in
+networks:
   cassandra_three:
     driver: bridge
     ipam:
-     config:
-       - subnet: 172.22.0.0/16
-         gateway: 172.22.0.1        
-         
-services:
-  cass-left-A:
-    image: cassandra:4.1.11   # better to use a specific version, if you want to control upgrades
-    container_name: cass-left-three-A
-    hostname: cass-left-three-A
-    healthcheck:
-      test: nodetool status | grep -e 'UN.*172.22.0.11.*A'
-      interval: 5s
-      timeout: 5s
-      retries: 300
-    networks:
-      cassandra_three:
-        ipv4_address: 172.22.0.11
-    ports:
-      - "9041:9042"  # Expose native binary CQL port for your apps
-      - "7191:7199"  # JMX
-      - "7001:7000"
-    volumes:
-      - ./data/three-node-A:/var/lib/cassandra    # This is the volume that will persist data for cass1 node
-      - ./conf:/etc/cassandra
-      
-    environment: &environment    # Declare and save environments variables into "environment"
-        CASSANDRA_SEEDS: "cass-left-A:7000,cass-left-B:7000"    # The first two nodes will be seeds
-        CASSANDRA_CLUSTER_NAME: THREE_CLUST
-        CASSANDRA_DC: A
-        CASSANDRA_RACK: AR
-        CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
-        JVM_OPTS: "-Xms128M -Xmx128M -XX:+UseG1GC"
-    deploy:
-      resources:
-        limits:
-          memory: 600M
-      
-      
-  cass-left-B:
-    image: cassandra:4.1.11   # better to use a specific version, if you want to control upgrades
-    container_name: cass-left-three-B
-    hostname: cass-left-three-B
-    healthcheck:
-      test: nodetool status | grep -e 'UN.*172.22.0.12.*B'
-      interval: 5s
-      timeout: 5s
-      retries: 300
-    networks:
-      cassandra_three:
-        ipv4_address: 172.22.0.12
-    ports:
-      - "9042:9042"  # Expose native binary CQL port for your apps
-      - "7192:7199"  # JMX
-      - "7002:7000"
-    volumes:
-      - ./data/three-node-B:/var/lib/cassandra    # This is the volume that will persist data for cass1 node
-      - ./conf:/etc/cassandra   # Use your own config files for full control
-    environment: &environment    # Declare and save environments variables into "environment"
-        CASSANDRA_SEEDS: "cass-left-A:7000,cass-left-B:7000"    # The first two nodes will be seeds
-        CASSANDRA_CLUSTER_NAME: THREE_CLUST
-        CASSANDRA_DC: B
-        CASSANDRA_RACK: BR
-        CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
-        JVM_OPTS: "-Xms128M -Xmx128M -XX:+UseG1GC"
-    deploy:
-      resources:
-        limits:
-          memory: 600M
-    depends_on:
-      cass-left-A:
-        condition: service_healthy
-        
-  cass-left-C:
-    image: cassandra:4.1.11   # better to use a specific version, if you want to control upgrades
-    container_name: cass-left-three-C
-    hostname: cass-left-three-C
-    healthcheck:
-      test: nodetool status | grep -e 'UN.*172.22.0.13.*C'
-      interval: 5s
-      timeout: 5s
-      retries: 300
-    networks:
-      cassandra_three:
-        ipv4_address: 172.22.0.13
-    ports:
-      - "9043:9042"  # Expose native binary CQL port for your apps
-      - "7193:7199"  # JMX
-      - "7003:7000"
-    volumes:
-      - ./data/three-node-C:/var/lib/cassandra    # This is the volume that will persist data for cass1 node
-      - ./conf:/etc/cassandra   # Use your own config files for full control
-    environment: &environment    # Declare and save environments variables into "environment"
-        CASSANDRA_SEEDS: "cass-left-A:7000,cass-left-B:7000"    # The first two nodes will be seeds
-        CASSANDRA_CLUSTER_NAME: THREE_CLUST
-        CASSANDRA_DC: C
-        CASSANDRA_RACK: CR
-        CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
-        JVM_OPTS: "-Xms128M -Xmx128M -XX:+UseG1GC"
-    deploy:
-      resources:
-        limits:
-          memory: 600M
-    depends_on:
-      cass-left-B:
-        condition: service_healthy      
+      config:
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1
 
-  
+x-network-ips:
+  ip-a: &ip-a 172.22.0.11
+  ip-b: &ip-b 172.22.0.12
+  ip-c: &ip-c 172.22.0.13
+
+
+# Базовый шаблон
+x-cassandra-base: &cassandra-base
+  image: cassandra:4.1.11
+  healthcheck:
+    test: ["CMD-SHELL", "nodetool status | grep -e \"UN.*$${NODE_IP}.*$${CASSANDRA_DC}\""]
+    interval: 5s
+    timeout: 5s
+    retries: 10
+  deploy:
+    resources:
+      limits:
+        memory: 512M
+
+# Общие переменные окружения
+x-environment: &common-env
+  CASSANDRA_SEEDS: "cass-three-A:7000,cass-three-B:7000"
+  CASSANDRA_CLUSTER_NAME: THREE_CLUSTER
+  CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+  JVM_OPTS: "-Xms128M -Xmx256M -XX:+UseG1GC"
+
+services:
+  cass-A:
+    <<: *cassandra-base
+    container_name: cass-three-A
+    hostname: cass-three-A
+    networks:
+      cassandra_three:
+        ipv4_address: *ip-a
+    ports: ["9041:9042", "7191:7199", "7001:7000"]
+    volumes:
+      - ./data/three-node-A:/var/lib/cassandra
+      - ./conf:/etc/cassandra
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-a
+      CASSANDRA_DC: LORDAERON
+      CASSANDRA_RACK: LORDAERON-RACK
+
+  cass-B:
+    <<: *cassandra-base
+    container_name: cass-three-B
+    hostname: cass-three-B
+    networks:
+      cassandra_three:
+        ipv4_address: *ip-b
+    ports: ["9042:9042", "7192:7199", "7002:7000"]
+    volumes:
+      - ./data/three-node-B:/var/lib/cassandra
+      - ./conf:/etc/cassandra
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-b
+      CASSANDRA_DC: KALIMDOR
+      CASSANDRA_RACK: KALIMDOR-RACK
+    depends_on:
+      cass-A: { condition: service_healthy }
+
+  cass-C:
+    <<: *cassandra-base
+    container_name: cass-three-C
+    hostname: cass-three-C
+    networks:
+      cassandra_three:
+        ipv4_address: *ip-c
+    ports: ["9043:9042", "7193:7199", "7003:7000"]
+    volumes:
+      - ./data/three-node-C:/var/lib/cassandra
+      - ./conf:/etc/cassandra
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-c
+      CASSANDRA_DC: NORTHREND
+      CASSANDRA_RACK: NORTHREND-RACK
+    depends_on:
+      cass-B: { condition: service_healthy }

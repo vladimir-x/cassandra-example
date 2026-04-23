@@ -9,7 +9,7 @@ services:
         test: ["CMD", "cqlsh", "-e", "describe keyspaces" ]
         interval: 5s
         timeout: 5s
-        retries: 60
+        retries: 10
     networks:
       - cassandra-one
     ports:
@@ -18,13 +18,13 @@ services:
     volumes:
       - ./data/one-node:/var/lib/cassandra
       - ./conf:/etc/cassandra
-      
-    environment: &environment    # Declare and save environments variables into "environment"
-        CASSANDRA_SEEDS: "cass1"    # The first two nodes will be seeds
+
+    environment:
+        CASSANDRA_SEEDS: "cass1"
         CASSANDRA_CLUSTER_NAME: ONE_CLUST
         CASSANDRA_ENDPOINT_SNITCH: SimpleSnitch
-        JVM_OPTS: "-Xms128M -Xmx128M -XX:+UseG1GC"
+        JVM_OPTS: "-Xms128M -Xmx256M -XX:+UseG1GC"
     deploy:
       resources:
         limits:
-          memory: 600M
+          memory: 512M

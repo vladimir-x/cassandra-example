@@ -9,7 +9,7 @@ services:
         test: ["CMD", "cqlsh", "-e", "describe keyspaces" ]
         interval: 5s
         timeout: 5s
-        retries: 10
+        retries: 60
     networks:
       - cassandra-one
     ports:
@@ -17,8 +17,7 @@ services:
       - "7199:7199"  # JMX
     volumes:
       - ./data/one-node:/var/lib/cassandra
-      - ./conf:/etc/cassandra
-
+      - ./jvm11-server.options:/etc/cassandra/jvm11-server.options
     environment:
         CASSANDRA_SEEDS: "cass1"
         CASSANDRA_CLUSTER_NAME: ONE_CLUST

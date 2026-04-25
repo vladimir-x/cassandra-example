@@ -6,5 +6,5 @@ drop KEYSPACE if exists mobishop;
 CREATE KEYSPACE mobishop
     WITH REPLICATION = {
         'class' : 'NetworkTopologyStrategy',
-        'Left' : 3, 'Right': 3
+        'LORDAERON' : 3, 'KALIMDOR': 3
         };

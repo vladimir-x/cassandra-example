@@ -38,3 +38,6 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+### Cassandra Docker Data ###
+docker/data/

@@ -1,0 +1,216 @@
+
+#Настройки сети
+networks:
+  cassandra_nine: # docker network where all cassandra nodes will be put in
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.23.0.0/16
+         gateway: 172.23.0.1          
+
+# IP адреса узлов
+x-network-ips:
+  ip-a: &ip-a 172.23.0.11
+  ip-b: &ip-b 172.23.0.12
+  ip-c: &ip-c 172.23.0.13
+  ip-d: &ip-d 172.23.0.14
+  ip-e: &ip-e 172.23.0.15
+  ip-f: &ip-f 172.23.0.16
+  ip-h: &ip-h 172.23.0.17
+  ip-i: &ip-i 172.23.0.18
+  ip-j: &ip-j 172.23.0.19
+  
+# Базовый шаблон
+x-cassandra-base: &cassandra-base
+  image: cassandra:4.1.11
+  healthcheck:
+    test: ["CMD-SHELL", "nodetool status | grep -e \"UN.*$${NODE_IP}.*$${CASSANDRA_DC}\""]
+    interval: 5s
+    timeout: 5s
+    retries: 60
+  deploy:
+    resources:
+      limits:
+        memory: 512M
+        
+# Общие переменные окружения
+x-environment: &common-env
+  CASSANDRA_SEEDS: "cass-nine-A:7000,cass-nine-D:7000,cass-nine-H:7000"
+  CASSANDRA_CLUSTER_NAME: NINE_CLUSTER
+  CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+  JVM_OPTS: "-Xms128M -Xmx256M -XX:+UseG1GC"
+  
+  
+services:
+
+##LORDAERON
+  cass-nine-A:
+    <<: *cassandra-base
+    container_name: cass-nine-A
+    hostname: cass-nine-A
+    networks:
+      cassandra_nine:
+        ipv4_address: *ip-a
+    ports: ["9041:9042", "7099:7199"]
+    volumes:
+      - ./data/cass-nine-A:/var/lib/cassandra
+      - ./jvm11-server.options:/etc/cassandra/jvm11-server.options
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-a
+      CASSANDRA_DC: LORDAERON
+      CASSANDRA_RACK: LORDAERON-RACK-A
+      
+  cass-nine-B:
+    <<: *cassandra-base
+    container_name: cass-nine-B
+    hostname: cass-nine-B
+    networks:
+      cassandra_nine:
+        ipv4_address: *ip-b
+    ports: ["9042:9042"]
+    volumes:
+      - ./data/cass-nine-B:/var/lib/cassandra
+      - ./jvm11-server.options:/etc/cassandra/jvm11-server.options
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-b
+      CASSANDRA_DC: LORDAERON
+      CASSANDRA_RACK: LORDAERON-RACK-B
+    depends_on:
+      cass-nine-A: { condition: service_healthy }
+      
+  cass-nine-C:
+    <<: *cassandra-base
+    container_name: cass-nine-C
+    hostname: cass-nine-C
+    networks:
+      cassandra_nine:
+        ipv4_address: *ip-c
+    ports: ["9043:9042"]
+    volumes:
+      - ./data/cass-nine-C:/var/lib/cassandra
+      - ./jvm11-server.options:/etc/cassandra/jvm11-server.options
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-c
+      CASSANDRA_DC: LORDAERON
+      CASSANDRA_RACK: LORDAERON-RACK-C
+    depends_on:
+      cass-nine-B: { condition: service_healthy }
+
+##KALIMDOR
+  cass-nine-D:
+    <<: *cassandra-base
+    container_name: cass-nine-D
+    hostname: cass-nine-D
+    networks:
+      cassandra_nine:
+        ipv4_address: *ip-d
+    ports: ["9141:9042", "7199:7199"]
+    volumes:
+      - ./data/cass-nine-D:/var/lib/cassandra
+      - ./jvm11-server.options:/etc/cassandra/jvm11-server.options
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-d
+      CASSANDRA_DC: KALIMDOR
+      CASSANDRA_RACK: KALIMDOR-RACK-D
+    depends_on:
+      cass-nine-C: { condition: service_healthy }
+      
+  cass-nine-E:
+    <<: *cassandra-base
+    container_name: cass-nine-E
+    hostname: cass-nine-E
+    networks:
+      cassandra_nine:
+        ipv4_address: *ip-e
+    ports: ["9142:9042"]
+    volumes:
+      - ./data/cass-nine-E:/var/lib/cassandra
+      - ./jvm11-server.options:/etc/cassandra/jvm11-server.options
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-e
+      CASSANDRA_DC: KALIMDOR
+      CASSANDRA_RACK: KALIMDOR-RACK-E
+    depends_on:
+      cass-nine-D: { condition: service_healthy }
+      
+  cass-nine-F:
+    <<: *cassandra-base
+    container_name: cass-nine-F
+    hostname: cass-nine-F
+    networks:
+      cassandra_nine:
+        ipv4_address: *ip-f
+    ports: ["9143:9042"]
+    volumes:
+      - ./data/cass-nine-F:/var/lib/cassandra
+      - ./jvm11-server.options:/etc/cassandra/jvm11-server.options
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-f
+      CASSANDRA_DC: KALIMDOR
+      CASSANDRA_RACK: KALIMDOR-RACK-F
+    depends_on:
+      cass-nine-E: { condition: service_healthy }
+  
+##NORHTREND
+  cass-nine-H:
+    <<: *cassandra-base
+    container_name: cass-nine-H
+    hostname: cass-nine-H
+    networks:
+      cassandra_nine:
+        ipv4_address: *ip-h
+    ports: ["9341:9042", "7399:7199"]
+    volumes:
+      - ./data/cass-nine-H:/var/lib/cassandra
+      - ./jvm11-server.options:/etc/cassandra/jvm11-server.options
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-h
+      CASSANDRA_DC: NORHTREND
+      CASSANDRA_RACK: NORHTREND-RACK-H
+    depends_on:
+      cass-nine-F: { condition: service_healthy }
+
+  cass-nine-I:
+    <<: *cassandra-base
+    container_name: cass-nine-I
+    hostname: cass-nine-I
+    networks:
+      cassandra_nine:
+        ipv4_address: *ip-i
+    ports: ["9342:9042"]
+    volumes:
+      - ./data/cass-nine-I:/var/lib/cassandra
+      - ./jvm11-server.options:/etc/cassandra/jvm11-server.options
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-i
+      CASSANDRA_DC: NORHTREND
+      CASSANDRA_RACK: NORHTREND-RACK-I
+    depends_on:
+      cass-nine-H: { condition: service_healthy }
+
+  cass-nine-J:
+    <<: *cassandra-base
+    container_name: cass-nine-J
+    hostname: cass-nine-J
+    networks:
+      cassandra_nine:
+        ipv4_address: *ip-j
+    ports: ["9343:9042"]
+    volumes:
+      - ./data/cass-nine-J:/var/lib/cassandra
+      - ./jvm11-server.options:/etc/cassandra/jvm11-server.options
+    environment:
+      <<: *common-env
+      NODE_IP: *ip-j
+      CASSANDRA_DC: NORHTREND
+      CASSANDRA_RACK: NORHTREND-RACK-J
+    depends_on:
+      cass-nine-I: { condition: service_healthy }

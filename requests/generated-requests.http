@@ -2,6 +2,7 @@
 ### Проверка, что приложение запущено
 GET http://localhost:8080/ping
 
+### --- КАТАЛОГ ---
 
 ### Получить весь каталог товаров
 GET http://localhost:8080/catalog/list
@@ -29,6 +30,7 @@ Content-Type: application/json
 
 
 
+### --- БАЛАНС ---
 
 ### получить баланс всех товаров
 GET http://localhost:8080/balance/list
@@ -46,6 +48,26 @@ Content-Type: application/json
 }
 
 
+### --- БРОНИРОВАНИЕ ---
+
+### получить все бронированные товары
+GET http://localhost:8080/reserve/list
+
+### получить информацуию по бронированию
+GET http://localhost:8080/reserve/get/1234-5678-0000-0001
+
+### забронировать товар
+POST http://localhost:8080/reserve/book
+Content-Type: application/json
+
+{
+  "serialNumber": "019eeabb-19b7-7808-aa5f-49ce1e612b01",
+  "barcode": "0001-2010",
+  "fio": "Ivan Ivanov",
+  "phone": "+79119559897"
+}
+
+### --- ЧЕКИ ---
 
 ### получить все чеки
 GET http://localhost:8080/receipt/list

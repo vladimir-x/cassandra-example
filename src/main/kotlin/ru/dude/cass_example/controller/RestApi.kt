@@ -13,6 +13,7 @@ import ru.dude.cass_example.entity.Receipt
 import ru.dude.cass_example.repository.BalanceRepository
 import ru.dude.cass_example.repository.CatalogRepository
 import ru.dude.cass_example.repository.ReceiptRepository
+import ru.dude.cass_example.repository.ReserveRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -26,6 +27,7 @@ import java.time.format.DateTimeFormatter
 internal class RestApi(
     val catalogRepository: CatalogRepository,
     val balanceRepository: BalanceRepository,
+    val reserveRepository: ReserveRepository,
     val receiptRepository: ReceiptRepository,
 ) {
 
@@ -67,7 +69,7 @@ internal class RestApi(
     fun balanceChange(@RequestBody changeItem: ChangeDto) = updateBalance(changeItem.barcode,changeItem.delta)
 
 
-    private fun updateBalance(barcode: String, delta: Long) {
+        private fun updateBalance(barcode: String, delta: Long) {
 
         // 10 попыток на обновление
         var retries = 10
@@ -104,6 +106,51 @@ internal class RestApi(
         balanceRepository.createRecord(barcode)
 
         return balanceRepository.findByIdOrNull(barcode) ?: throw Exception("Balance [$barcode] can't create")
+    }
+
+
+    @GetMapping("/reserve/list")
+    fun reserveList() = reserveRepository.findAll().map { ReserveDto.byEntity(it) }
+
+    @GetMapping("/reserve/get/{serialNumber}")
+    fun reserveGet(@PathVariable serialNumber: String) =
+        reserveRepository.findBySerialNumber(serialNumber)?.let { ReserveDto.byEntity(it)}
+
+    @PostMapping("/reserve/book", consumes = ["application/json"])
+    fun reserveBook(@RequestBody reserveDto: ReserveDto) = reserveBookInternal(reserveDto)
+
+    private fun reserveBookInternal(dto: ReserveDto): Boolean{
+        // 10 попыток на вставку
+        var retries = 10
+
+        while (retries-- > 0) {
+            try {
+
+                val applied = reserveRepository.book(dto.serialNumber, dto.barcode, dto.fio, dto.phone)
+
+                if (applied) {
+                    println("Device booking succeed: ${dto.serialNumber}")
+                } else{
+                    val existed = reserveRepository.findBySerialNumber(dto.serialNumber)
+
+                    if (existed == null){
+                        throw Exception("Reserve not found")
+                    }else if (existed.phone == dto.phone){
+                        println("Device booking succeed: ${dto.serialNumber} already booked by ${existed.phone}")
+                    } else {
+                        println("Device booking failed: ${dto.serialNumber} already booked by different ${existed.phone}")
+                    }
+
+                }
+
+                return applied
+            } catch (e: Exception) {
+                println("WARNING: ${e.message}")
+                retries--
+            }
+        }
+
+        throw Exception("Device booking failed")
     }
 
 

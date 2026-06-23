@@ -25,6 +25,6 @@ internal interface BalanceRepository : CassandraRepository<Balance, String> {
 
 
     @Consistency(DefaultConsistencyLevel.QUORUM)
-    fun findByBarcode(barcode: String): Balance
+    fun findByBarcode(barcode: String): Balance?
 
 }

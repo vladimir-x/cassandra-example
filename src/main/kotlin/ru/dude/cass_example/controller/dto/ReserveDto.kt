@@ -1,4 +1,4 @@
-package ru.dude.cass_example.controller
+package ru.dude.cass_example.controller.dto
 
 import ru.dude.cass_example.entity.Reserve
 

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component
 
 /**
  * Специальный репозиторий для реализации вставок с указанным уровнем согласованности.
+ *
  * @author Vladimir X
  * Date: 19.04.2026
  */

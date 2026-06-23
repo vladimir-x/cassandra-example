@@ -28,45 +28,6 @@ Content-Type: application/json
 }
 ]
 
-
-
-### --- БАЛАНС ---
-
-### получить баланс всех товаров
-GET http://localhost:8080/balance/list
-
-### получить баланс одного товара
-GET http://localhost:8080/balance/get/0001-2010
-
-### Внести товар на склад
-POST http://localhost:8080/balance/change
-Content-Type: application/json
-
-{
-  "barcode": "0001-2010",
-  "delta": -5
-}
-
-
-### --- БРОНИРОВАНИЕ ---
-
-### получить все бронированные товары
-GET http://localhost:8080/reserve/list
-
-### получить информацуию по бронированию
-GET http://localhost:8080/reserve/get/1234-5678-0000-0001
-
-### забронировать товар
-POST http://localhost:8080/reserve/book
-Content-Type: application/json
-
-{
-  "serialNumber": "019eeabb-19b7-7808-aa5f-49ce1e612b01",
-  "barcode": "0001-2010",
-  "fio": "Ivan Ivanov",
-  "phone": "+79119559897"
-}
-
 ### --- ЧЕКИ ---
 
 ### получить все чеки
@@ -110,3 +71,40 @@ Content-Type: application/json
   "barcodes": ["0001-2012"]
 }
 ]
+
+### --- БРОНИРОВАНИЕ ---
+
+### получить все бронированные товары
+GET http://localhost:8080/reserve/list
+
+### получить информацуию по бронированию
+GET http://localhost:8080/reserve/get/019eeabb-19b7-7808-aa5f-49ce1e612b01
+
+### забронировать товар
+POST http://localhost:8080/reserve/book
+Content-Type: application/json
+
+{
+  "serialNumber": "019eeabb-19b7-7808-aa5f-49ce1e612b07",
+  "barcode": "0001-2010",
+  "fio": "Ivan Ivanov",
+  "phone": "+79119559897"
+}
+
+###################################################
+### --- БАЛАНС ---
+
+### получить баланс всех товаров
+GET http://localhost:8080/balance/list
+
+### получить баланс одного товара
+GET http://localhost:8080/balance/get/0001-2010
+
+### Внести товар на склад
+POST http://localhost:8080/balance/change
+Content-Type: application/json
+
+{
+  "barcode": "0001-2010",
+  "delta": -5
+}
